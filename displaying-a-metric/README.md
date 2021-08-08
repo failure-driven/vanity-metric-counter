@@ -116,6 +116,34 @@ void loop()
 
 The serial port is not very consumer centric, given you need to connect to it manually via a screen session or IDE enabled plotter. One output device that comes on most Arduino like boards is an onboard LED (light emitting diode). Let's use that as a display next.
 
+Using the default `LED_BUILTIN` and writing an "analog" `PWM` (pusle width modulation) signal to it can give us a pulsing light effect.
+
+```{c}
+void ledShow()
+{
+  // max duty for analogWrite is 2^8 - 1 = 256,
+  // math values range -1 .. +1
+  // following math makes duyt range 0 .. 255
+  const byte duty = (128 * mathValue(std::sin)) + 128;
+  analogWrite(LED_BUILTIN, duty);
+}
+
+void setup()
+{
+  pinMode(LED_BUILTIN, OUTPUT);
+}
+
+void loop()
+{
+  ledShow();
+  delay(20);
+}
+```
+
+in the case of the ESP8266 there is the `LED_BUILTIN` on pin `GPIO 2` and there is a second led on the board at `GPIO 16`. Below is the sine and cosine LED pulsing out by 90 degrees.
+
+![sine and cos LED pusling](images/sin_cos_led.gif)
+
 ## 7 segment display
 
 ## OLED display
