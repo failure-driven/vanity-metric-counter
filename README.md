@@ -80,7 +80,8 @@ The approach I plan to take is as follows:
   - download latest [Arduino IDE](https://www.arduino.cc/en/software) from arduino.cc
     - OR use [VSCode](https://code.visualstudio.com/) and this [Arduino extension](https://maker.pro/arduino/tutorial/how-to-use-visual-studio-code-for-arduino) - note that you still need standarad Arduino IDE isntalled.
   - get a board, probably ESP32 is your best bet (from Jaycar locally in Melbourne or on Ebay, Amazon, Banggood, etc)
-
 1. **Displaying a metric**
+   [displaying-a-metric](./displaying-a-metric)
+1. **Fetch a metric** over the internet
 
-  ...
+   ...
