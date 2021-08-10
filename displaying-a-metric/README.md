@@ -142,8 +142,98 @@ void loop()
 
 in the case of the ESP8266 there is the `LED_BUILTIN` on pin `GPIO 2` and there is a second led on the board at `GPIO 16`. Below is the sine and cosine LED pulsing out by 90 degrees.
 
-![sine and cos LED pusling](images/sin_cos_led.gif)
+![sine and cos LED pulsing](images/sin_cos_led.gif)
+
+at this stage we note that the code does NOT compile for ESP32 which does not have analogWrite. Instead it has LED Control functions, `ledc...` like `ledcSetup` and `ledcAttachPin` for setting it up and `ledcWrite` for writing a duty cycle value. There is also a specific way of `ledc_set_fade_with_time` to do precisely this, fade an LED.
+
+To separate out specific `ESP32` code we can do the following
+
+```{c}
+int duty(int maxDuty, double (*pMathFunction)(double rad) = std::sin)
+{  
+  const double magnitude = (*pMathFunction)((millis() % PERIOD_MILLIS) * RAD_2 / PERIOD_MILLIS);
+  const int duty = ((maxDuty/2) * magnitude) + (maxDuty/2);
+  return duty;
+}
+
+void ledShow()
+{
+#if defined(ESP32)
+  ledcWrite(LEDC_CHANNEL_0, duty(MAX_DUTY));
+#else
+  analogWrite(LED_BUILTIN, duty(256)); // 2^8
+#endif
+
+#if defined(ESP8266) // only ESP8266 has a 2nd inbuilt LED
+  analogWrite(LED_BUILTIN_ONBOARD, duty(256, std::cos));
+#endif
+}
+```
+
+where standard arduino has a maximum of 256 for a duty cycle where as the `ESP32` is more configurable with `MAX_DUTY` which is based on the setup:
+
+```{c}
+#if defined(ESP32)
+#define LEDC_CHANNEL_0         0
+#define LEDC_TIMER_13_BIT     13 // duty resolution of 13 bits 2^13 = 8192 discrete levels of LED intensity
+#define MAX_DUTY            8192 // 2^LEDC_TIMER_RESOLUTION
+#define LEDC_BASE_FREQ      5000 // 5kHz has maximum duty resolution of 13 bits
+#endif
+
+...
+
+#if defined(ESP32)
+  ledcSetup(LEDC_CHANNEL_0, LEDC_BASE_FREQ, LEDC_TIMER_13_BIT);
+  ledcAttachPin(LED_BUILTIN, LEDC_CHANNEL_0);
+#endif
+```
+
+which uses a "duty resolution" and a PWM frequency (5kHz) which is adjustable. Adusting down the duty cycle to 4 bit resolution
+
+```{c}
+ledc SEtup(LEDC_CHANNEL_0, LEDC_BASE_FREQ, 4)
+...
+#if defined(ESP32)
+  ledcWrite(LEDC_CHANNEL_0, duty(16)); // 2^4 = 16
+#else
+```
+
+will produce a more boxy, lower resolution, sine wave, here at 10 second period to exentuate it
+
+![16 bit resolution sine wave](images/16_bit_resolution_sin.jpg)
+
+- [ ] TODO: work out what the PWM frequency affects
+- [ ] TODO: work out how to use the ledc fade functions
+
+**Note:** the code does compile on an Arduino, but as the default `LED_BUILTIN` is not on a PWM pin it means the LED just stays on.
+
+At this point we have strayed a little from the purpose of displaying a "vanity metric" but the LED flashing will come in handy for knowing the status of the board, like when it is fetching stats or failing to get them.
 
 ## 7 segment display
+
+1 Old fashion way to display digits is an arrangement of 7 LED's that can be turned on and off to display all the numerals as
+
+```
+   0      1      2      3      4      5      6      7      8      9
+ --            --     --            --            --     --     --
+|  |      |      |      |   |  |   |      |         |   |  |   |  |
+               --     --     --     --     --            --     --
+|  |      |   |         |      |      |   |  |      |   |  |      |
+ --            --     --            --     --            --       
+```
+
+To control 1 such digit as an LED, would require 7 outputs. This would clearly not scale to more than 2 digits. As such the digits are multiplexed, so each digit is turned on for a fraction of a second and than the next, to our eye they all look turned on as need be. To make it easier still, there are chips that drive these banks of 7 segement displays. 1 such chip is Maxim MAX7219CNG. These are often available as a prebuilt package like
+
+- https://au.banggood.com/3Pcs-MAX7219-Red-8-Bit-Digital-Tube-LED-Display-Module-p-1029085.html
+
+with 5 pins
+
+1. VCC
+1. GND
+1. DOUT
+1. LOAD
+1. CLK
+
+and this is where things can get tricky, finding a suitable driver and instructions on how to set it up and configure everything to work
 
 ## OLED display
