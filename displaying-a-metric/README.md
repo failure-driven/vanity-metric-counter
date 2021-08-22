@@ -234,6 +234,95 @@ with 5 pins
 1. LOAD
 1. CLK
 
-and this is where things can get tricky, finding a suitable driver and instructions on how to set it up and configure everything to work
+and this is where things can get tricky, finding a suitable driver and instructions on how to set it up and configure everything to work.
+
+There is the recommended `LedController` library
+
+- documentation http://wayoda.github.io/LedControl/
+- source https://github.com/wayoda/LedControl
+
+but this does NOT support ESP32 as it relies on `avr/pgmspace.h`
+
+instead I am going to use the newer `LedController` library which builds on LedController mentioend above.
+
+- documentation https://noah1510.github.io/LedController/english/index.html
+- source https://github.com/noah1510/LedController
+
+the basic setup would be
+
+```
+#include "LedController.hpp"
+
+# assuming single MAX72XX module and using hardware SPI
+LedController<1, 1> lc = LedController<1, 1>();
+
+void setup()
+{
+  lc.init(CS);
+  lc.setIntensity(8); // 0 = low, 8 = medium
+  lc.clearMatrix();
+}
+
+# write 01234567
+void loop() {
+  lc.setDigit(0, 7, 0, false);
+  lc.setDigit(0, 6, 1, false);
+  lc.setDigit(0, 5, 2, false);
+  lc.setDigit(0, 4, 3, false);
+  lc.setDigit(0, 3, 4, false);
+  lc.setDigit(0, 2, 5, false);
+  lc.setDigit(0, 1, 6, false);
+  lc.setDigit(0, 0, 7, false);
+  delay(1000);
+}
+```
+
+clearly this is write for looping and to write any number we can do
+
+```
+#define DIGITS_PER_SEGMENT  8
+
+void writeMetric(unsigned long number)
+{
+  for (byte index = 0; index < DIGITS_PER_SEGMENT; index++) {
+    unsigned long divisor = 1;
+    for (byte offset = 0; offset < index; offset++) {
+      divisor *= 10;
+    }
+
+    byte digit = number / divisor % 10;
+    lc.setDigit(0, index % DIGITS_PER_SEGMENT, digit, false);
+  }
+}
+```
+
+Not only that but there is a sort of alphabet that can also be written using `setChar(...)` for all lower and uppercase letters. This is not perfect but understandable.
+
+[7seg-display.ino](./7seg-display/7seg-display.ino) is an example that writes the text `"mEtric CountEr"` followed by 3 times displaying the number of `millis()` since the arduino was started
+
+**Wiring**
+
+```
+       ------------------
+  3V3 | |--|  |--|  |--| | GND
+   EN | |  |--|  |--|  | | GPIO23  SPI_MOSI
+    - |  --------------  | -
+    - | |              | | -                    3V3 ======> VCC   ---   ---   ---   ---
+    - | | ESP-WROOM-32 | | -                    GND ======> GND  |   | |   | |   | |   |
+    - | |              | | -                    GPIO23 ===> DIN   ---   ---   ---   ---
+    - | |              | | -                    GPIO5 ====> CS   |   | |   | |   | |   |
+    - | |              | | GPI018  SPI_CLK      GPIO8 ====> CLK   ---   ---   ---   ---
+    - | |              | | GPI05   SPI_CS0
+    - |  --------------  | -
+    - |                  | -
+    - |                  | -
+    - |                  | -
+    - |                  | -
+  GND | EN   _____  BOOT | GND
+  VIN | [ ] / USB \  [ ] | VDD 3V3
+       ------------------
+```
+
+![7 segment write and display](images/7seg_write_and_display.gif)
 
 ## OLED display
