@@ -300,7 +300,9 @@ Not only that but there is a sort of alphabet that can also be written using `se
 
 [7seg-display.ino](./7seg-display/7seg-display.ino) is an example that writes the text `"mEtric CountEr"` followed by 3 times displaying the number of `millis()` since the arduino was started
 
-**Wiring**
+### Wiring
+
+#### ESP32
 
 ```
        ------------------
@@ -323,6 +325,34 @@ Not only that but there is a sort of alphabet that can also be written using `se
        ------------------
 ```
 
+#### ESP8266
+
+attempts to get this running? TODO sort this out
+
+```
+#include <SPI.h> // is this needed?
+#define CS 8     // GPIO17 D8 CS
+```
+       ------------------
+ ADCO | |--|  |--|  |--| | -
+  RSV | |  |--|  |--|  | | -
+  RSV |  --------------  | -
+    - | |              | | -          3V3 =========> VCC   ---   ---   ---   ---
+    - | |   ESP-8266   | | -          GND =========> GND  |   | |   | |   | |   |
+    - | |              | | -          D7 MOSI =====> DIN   ---   ---   ---   ---                    
+    - | |              | | GND        D8 CS =======> CS   |   | |   | |   | |   |
+    - | |              | | D5 SCLK    D5 SCLK =====> CLK   ---   ---   ---   ---
+    - |  --------------  | -
+  GND |                  | D7 MOSI
+  3V3 |                  | D8 CS
+   EN |                  | RX
+  RST |                  | TX 
+  GND | EN   _____  BOOT | GND
+  VIN | [ ] / USB \  [ ] | 3V3
+       ------------------
+```
+
 ![7 segment write and display](images/7seg_write_and_display.gif)
 
 ## OLED display
+
